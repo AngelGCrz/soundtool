@@ -1,0 +1,87 @@
+{
+  "name": "soundtool",
+  "version": "0.1.0",
+  "description": "Herramienta para sonidistas: ver, escuchar y reemplazar los sonidos de los juegos Pixi",
+  "author": "GDP Team",
+  "private": true,
+  "type": "module",
+  "main": "dist/electron/main.js",
+  "bin": {
+    "soundtool": "dist/bin/soundtool.js"
+  },
+  "scripts": {
+    "build": "node scripts/build.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json && tsc -p src/ui/tsconfig.json",
+    "start": "npm run build && electron .",
+    "web": "npm run build && node dist/bin/soundtool.js",
+    "test": "node --test test/*.test.ts",
+    "check": "npm run typecheck && npm test",
+    "icon": "electron scripts/make-icon.cjs",
+    "dist:mac": "npm run check && npm run build && electron-builder --mac --arm64 && electron-builder --mac --x64",
+    "dist:win": "npm run check && npm run build && electron-builder --win",
+    "dist": "npm run dist:mac && electron-builder --win"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "lamejs": "^1.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "electron": "33.2.1",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.2",
+    "typescript": "^5.9.3"
+  },
+  "build": {
+    "appId": "com.gdpteam.soundtool",
+    "productName": "SoundTool",
+    "copyright": "GDP Team",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**",
+      "!dist/**/*.map",
+      "package.json"
+    ],
+    "asar": true,
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.music",
+      "artifactName": "SoundTool-${version}-mac-${arch}.${ext}",
+      "identity": null
+    },
+    "dmg": {
+      "title": "SoundTool ${version}"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "SoundTool-${version}-windows-instalador.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "shortcutName": "SoundTool",
+      "deleteAppDataOnUninstall": false
+    },
+    "afterPack": "scripts/adhoc-sign.cjs"
+  }
+}

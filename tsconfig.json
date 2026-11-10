@@ -1,0 +1,24 @@
+{
+  // Servidor, Electron y CLI: se compilan a dist/ con tsc.
+  // Los imports llevan extensión .ts (Node 24 ejecuta el código fuente directamente en los tests)
+  // y tsc la reescribe a .js al compilar.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+    "rootDir": "src",
+    "outDir": "dist",
+    "strict": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "rewriteRelativeImportExtensions": true,
+    "skipLibCheck": true,
+    "sourceMap": true
+  },
+  "include": ["src/server", "src/electron", "src/bin", "src/shared"]
+}

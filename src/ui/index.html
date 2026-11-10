@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SoundTool</title>
+    <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4M7 7v10M11 4v16M15 8v8M19 11v2" /></svg>
+            SoundTool
+        </div>
+        <button id="gameBtn" class="game-btn" title="Cambiar de juego">
+            <span id="gameName">Elegir juego</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+        </button>
+        <div id="previewBox" class="preview-box" hidden>
+            <span id="previewStatus" class="chip"></span>
+            <select id="previewMode" title="Cómo se ejecuta el juego">
+                <option value="dist">Build (dist)</option>
+                <option value="vite">Código (Vite)</option>
+            </select>
+            <button id="reloadBtn" class="btn" title="Recargar el juego para oír los cambios">↻ Recargar juego</button>
+        </div>
+        <div class="spacer"></div>
+        <button id="historyBtn" class="btn" disabled>Historial</button>
+        <button id="discardBtn" class="btn" disabled>Descartar</button>
+        <button id="exportBtn" class="btn" disabled title="Descarga un .zip con los cambios para entregar a desarrollo">Exportar .zip</button>
+        <button id="saveBtn" class="btn primary" disabled>Guardar cambios</button>
+    </header>
+
+    <main class="layout">
+        <section class="stage">
+            <div class="game-wrap">
+                <iframe id="game" title="Juego" allow="autoplay; fullscreen"></iframe>
+            </div>
+            <section id="live" class="live">
+                <div class="live-head">
+                    <button id="liveToggle" class="live-title" title="Mostrar / ocultar">
+                        <span id="liveDot" class="dot"></span> En vivo
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                    </button>
+                    <div id="liveView" class="segmented mini" role="tablist">
+                        <button data-view="timeline" class="active">Línea de tiempo</button>
+                        <button data-view="list">Lista</button>
+                    </div>
+                    <div id="nowPlaying" class="now-playing"></div>
+                    <div class="spacer"></div>
+                    <div id="timelineTools" class="tl-tools">
+                        <label class="toggle" title="Incluye eventos que se repiten mucho (movimiento de rodillos, interfaz…)"><input id="showAllEvents" type="checkbox" /> Todos los eventos</label>
+                        <button id="zoomOut" class="btn small" title="Alejar">−</button>
+                        <button id="zoomIn" class="btn small" title="Acercar">＋</button>
+                    </div>
+                    <button id="livePause" class="btn small">Pausar</button>
+                    <button id="liveClear" class="btn small">Limpiar</button>
+                </div>
+                <div id="timeline" class="timeline"></div>
+                <ol id="liveList" class="live-list" hidden></ol>
+            </section>
+        </section>
+
+        <aside class="panel">
+            <div class="tabs" role="tablist">
+                <button data-tab="sounds" class="active">Sonidos <b id="tabSoundsCount"></b></button>
+                <button data-tab="moments">Momentos <b id="tabMomentsCount"></b></button>
+                <button data-tab="cues">Reglas <b id="tabCuesCount"></b></button>
+            </div>
+            <div class="panel-head">
+                <input id="search" type="search" placeholder="Buscar sonido, alias o archivo…" autocomplete="off" />
+                <div id="soundsHead" class="tab-head">
+                    <div id="filters" class="segmented" role="tablist">
+                        <button data-filter="all" class="active">Todos <b id="countAll"></b></button>
+                        <button data-filter="game">Juego <b id="countGame"></b></button>
+                        <button data-filter="common">Comunes <b id="countCommon"></b></button>
+                        <button data-filter="played">Sonaron <b id="countPlayed"></b></button>
+                        <button data-filter="pending">Cambiados <b id="countPending"></b></button>
+                    </div>
+                    <div class="head-row">
+                        <p class="hint">Arrastra un audio sobre un sonido para reemplazarlo.</p>
+                        <label class="toggle" title="WAV, AIFF, OGG, M4A, FLAC… se convierten a MP3 con el bitrate del original, para que el juego no pese más">
+                            <input id="toMp3" type="checkbox" checked /> Convertir a MP3
+                        </label>
+                        <button id="newSoundBtn" class="btn small">＋ Nuevo sonido</button>
+                    </div>
+                </div>
+                <div id="cuesHead" class="tab-head" hidden>
+                    <div class="head-row">
+                        <p class="hint">Sonidos que se añaden cuando pasa algo en el juego. Créalas con clic en un evento de la línea de tiempo o soltando un audio sobre ella.</p>
+                        <button id="newCueBtn" class="btn small">＋ Nueva regla</button>
+                    </div>
+                </div>
+                <div id="momentsHead" class="tab-head" hidden>
+                    <p class="hint">Qué sonido suena en cada momento del juego, según sus JSON de configuración. Los que se iluminan acaban de sonar.</p>
+                </div>
+            </div>
+            <ul id="list" class="list"></ul>
+            <div id="momentsList" class="list" hidden></div>
+            <ul id="cuesList" class="list" hidden></ul>
+            <div id="warnings" class="warnings" hidden></div>
+        </aside>
+    </main>
+
+    <!-- Selector de juegos -->
+    <div id="picker" class="overlay" hidden>
+        <div class="sheet picker">
+            <div class="sheet-head">
+                <h2>Elegir juego</h2>
+                <button class="icon-btn" data-close aria-label="Cerrar">✕</button>
+            </div>
+            <div class="tabs picker-tabs" role="tablist">
+                <button data-ptab="portal">Portal de juegos</button>
+                <button data-ptab="local">Carpeta local</button>
+            </div>
+
+            <div id="pickPortal" class="pick-pane">
+                <div class="portal-settings">
+                    <label class="field">
+                        <span class="label">playerId</span>
+                        <input id="playerId" inputmode="numeric" autocomplete="off" placeholder="p. ej. 10421" />
+                    </label>
+                    <label class="field">
+                        <span class="label">Casino / integración</span>
+                        <select id="endpoint"></select>
+                    </label>
+                    <label class="field">
+                        <span class="label">Idioma</span>
+                        <select id="lang"></select>
+                    </label>
+                </div>
+                <input id="portalSearch" type="search" placeholder="Número o nombre del juego (p. ej. 490)" autocomplete="off" />
+                <div id="portalGrid" class="game-grid"></div>
+                <p class="muted small">Los juegos del portal se pueden escuchar y modificar aquí, pero no guardar en el servidor: usa <b>Exportar .zip</b> para entregar los cambios.</p>
+            </div>
+
+            <div id="pickLocal" class="pick-pane">
+                <div class="games-dir">
+                    <div>
+                        <div class="label">Carpeta de juegos</div>
+                        <div id="gamesDir" class="path">Sin elegir</div>
+                    </div>
+                    <button id="gamesDirBtn" class="btn">Cambiar carpeta…</button>
+                </div>
+                <input id="gameSearch" type="search" placeholder="Número de juego (p. ej. 490)" autocomplete="off" />
+                <div id="gameGrid" class="game-grid"></div>
+                <div class="sheet-foot">
+                    <button id="openOtherBtn" class="btn">Abrir otra carpeta…</button>
+                </div>
+            </div>
+            <div id="pickerBusy" class="busy" hidden><span class="spinner"></span><span id="pickerBusyText">Descargando el juego…</span></div>
+        </div>
+    </div>
+
+    <!-- Nuevo sonido -->
+    <div id="newSound" class="overlay" hidden>
+        <form id="newSoundForm" class="sheet narrow">
+            <div class="sheet-head">
+                <h2>Nuevo sonido</h2>
+                <button type="button" class="icon-btn" data-close aria-label="Cerrar">✕</button>
+            </div>
+            <div class="field">
+                <span class="label">Archivo</span>
+                <div class="file-line">
+                    <button type="button" id="nsPlay" class="play small" data-key="ns">▶</button>
+                    <span id="nsFile" class="path"></span>
+                    <button type="button" id="nsChange" class="link-btn">Cambiar…</button>
+                </div>
+            </div>
+            <label class="field">
+                <span class="label">Nombre (alias) en el juego</span>
+                <input id="nsAlias" required pattern="[A-Za-z0-9_.\-]+" maxlength="64" placeholder="p. ej. snd_bonus_intro" />
+                <span class="muted small">Solo letras, números, _ - y punto. Se guardará en <code id="nsPath"></code></span>
+            </label>
+            <label class="field">
+                <span class="label">Usarlo en (opcional)</span>
+                <select id="nsMoment"><option value="">— Solo añadirlo al juego —</option></select>
+            </label>
+            <p class="muted small">Si no lo asignas a un momento, el juego lo cargará pero un programador tendrá que decir cuándo suena.</p>
+            <div class="sheet-foot">
+                <button type="button" class="btn" data-close>Cancelar</button>
+                <button type="submit" class="btn primary">Añadir</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Regla de sonido -->
+    <div id="cueModal" class="overlay" hidden>
+        <form id="cueForm" class="sheet narrow" autocomplete="off">
+            <div class="sheet-head">
+                <h2 id="cueTitle">Nueva regla</h2>
+                <button type="button" class="icon-btn" data-close aria-label="Cerrar">✕</button>
+            </div>
+            <label class="field">
+                <span class="label">Cuando en el juego…</span>
+                <select id="cueOn" required></select>
+            </label>
+            <label class="field">
+                <span class="label">…con el valor <span class="muted">(vacío = cualquiera)</span></span>
+                <input id="cueMatch" list="cueMatchList" placeholder="cualquier valor" />
+                <datalist id="cueMatchList"></datalist>
+            </label>
+            <div class="field-row">
+                <label class="field">
+                    <span class="label">Esperar (ms)</span>
+                    <input id="cueDelay" type="number" min="0" max="60000" step="1" value="0" />
+                </label>
+                <label class="field grow">
+                    <span class="label">Volumen <b id="cueVolumeVal">100%</b></span>
+                    <input id="cueVolume" type="range" min="0" max="100" value="100" />
+                </label>
+            </div>
+            <label class="field">
+                <span class="label">Suena</span>
+                <select id="cueSound" required></select>
+            </label>
+            <div id="cueNewFile" class="field new-file" hidden>
+                <span class="label">Archivo nuevo: <b id="cueFileName"></b></span>
+                <input id="cueAlias" pattern="[A-Za-z0-9_.\-]+" maxlength="64" placeholder="nombre (alias) en el juego" />
+            </div>
+            <label class="toggle"><input id="cueLoop" type="checkbox" /> En bucle</label>
+            <div class="field-row">
+                <label class="field grow">
+                    <span class="label">Parar cuando… <span class="muted">(opcional)</span></span>
+                    <select id="cueStopOn"></select>
+                </label>
+                <label class="field grow">
+                    <span class="label">…con el valor</span>
+                    <input id="cueStopMatch" list="cueStopMatchList" placeholder="cualquier valor" />
+                    <datalist id="cueStopMatchList"></datalist>
+                </label>
+            </div>
+            <label class="field">
+                <span class="label">Nota</span>
+                <input id="cueLabel" maxlength="120" placeholder="p. ej. golpe al entrar en free games" />
+            </label>
+            <p class="muted small">Se oye ya en SoundTool. Para que suene en el juego publicado, el engine tiene que leer estas reglas (se guardan en <code>assets/json/soundcues.json</code>).</p>
+            <div class="sheet-foot">
+                <button type="button" id="cueDelete" class="btn danger-btn" hidden>Eliminar</button>
+                <span class="spacer"></span>
+                <button type="button" id="cueTest" class="btn">▶ Probar</button>
+                <button type="button" class="btn" data-close>Cancelar</button>
+                <button type="submit" class="btn primary">Guardar regla</button>
+            </div>
+        </form>
+    </div>
+    <input id="cueFileInput" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aif,.aiff,.flac" hidden />
+
+    <!-- Historial -->
+    <div id="history" class="overlay" hidden>
+        <div class="sheet">
+            <div class="sheet-head">
+                <h2>Historial de guardados</h2>
+                <button class="icon-btn" data-close aria-label="Cerrar">✕</button>
+            </div>
+            <p class="muted">Cada guardado hace una copia de los archivos que pisó. “Restaurar” los deja como estaban antes de ese guardado.</p>
+            <ul id="historyList" class="history-list"></ul>
+        </div>
+    </div>
+
+    <input id="fileInput" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a" hidden />
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+
+    <script type="module" src="./app.js"></script>
+</body>
+</html>

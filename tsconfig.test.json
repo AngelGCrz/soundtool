@@ -1,0 +1,10 @@
+{
+  // Solo comprobación de tipos de los tests (Node los ejecuta directamente desde .ts)
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "allowImportingTsExtensions": true
+  },
+  "include": ["test", "src/server", "src/shared", "src/ui/events.ts"]
+}
